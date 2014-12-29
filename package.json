@@ -1,4 +1,16 @@
 {
-    "name": "dedupe",
-    "version": "1.0.0"
+  "name": "dedupe",
+  "description": "Find and delete duplicate files",
+  "version": "1.0.0",
+  "dependencies": {
+    "walk": "^2.3.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://storage.canofsleep.com/c/git/dedupe.git"
+  },
+  "main": "main.js",
+  "files": [
+    "main.js"
+  ]
 }
