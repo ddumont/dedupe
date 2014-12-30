@@ -3,6 +3,7 @@
   "description": "Find and delete duplicate files",
   "version": "1.0.0",
   "dependencies": {
+    "digest-stream": "^0.2.2",
     "walk": "^2.3.4"
   },
   "repository": {
