@@ -2,8 +2,16 @@
   "name": "dedupe",
   "description": "Find and delete duplicate files",
   "version": "1.0.0",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node main.js"
+  },
   "dependencies": {
+    "bluebird": "^3.5.0",
     "digest-stream": "^0.2.2",
+    "lodash.pick": "^4.4.0",
+    "lodash.pickby": "^4.6.0",
+    "lodash.reduce": "^4.6.0",
     "walk": "^2.3.4"
   },
   "repository": {

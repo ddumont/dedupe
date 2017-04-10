@@ -1,88 +1,50 @@
-(function () {
-  "use strict";
+"use strict";
 
-	var fs = require('fs'),
-	    walk = require('walk'),
-	    path = require('path'),
-	    digest = require('digest-stream'),
-	    args = process.argv.slice(2),
-	    root = args.shift();
+const Promise = require('bluebird');
+const fs = Promise.promisifyAll(require('fs'));
+const digest = require('digest-stream');
+const pickby = require('lodash.pickby');
+const reduce = require('lodash.reduce');
+const util = require('./util.js');
 
-	if (!root)
-		throw new Error('No path specified.');
+const [root] = process.argv.slice(2);
+if (!root) {
+  throw new Error('No path specified.');
+}
 
-	var stats = fs.statSync(root);
-	if (!stats.isDirectory())
-	  throw new Error('Path must be a directory.');
-
-	var map = {}, // map of file sizes to array of paths with that size
-	    walker = walk.walk(root);
-	
-	// Follow directories
-	walker.on("directories", function (root, dirStatsArray, next) {
-    next();
+fs.statAsync(root)
+.then(stats => {
+  if (!stats.isDirectory()) {
+    throw new Error('Path must be a directory.');
+  }
+  return util.getFileSizeMap(root);
+})
+.then(map => { // Filter out files that don't have duplicate sizes
+  return pickby(map, list => {
+    return list.length > 1;
   });
+})
+.then(map => { // convert to a list of all the files
+  const paths = reduce(map, (result, value, key) => {
+    return result.concat(value);
+  }, []);
 
-	walker.on("file", function (root, stats, next) {
-		var loc = path.join(root, stats.name);
-
-		if (!map[stats.size])
-    	map[stats.size] = [];
-    map[stats.size].push(loc);
-		next();
+  // convert to map of checksums -> paths
+  return Promise.map(paths, path => util.checksum(path), {concurrency: 1})
+  .reduce((result, sum, idx) => {
+    const list = result[sum] || (result[sum] = []);
+    list.push(paths[idx]);
+    return result;
+  }, {});
+})
+.then((map) => { // Filter out files that don't have duplicate sums
+  return pickby(map, list => {
+    return list.length > 1;
   });
-
-  walker.on("end", function () {
-  	var sizes = Object.keys(map);
-
-    function nextSize() {
-    	var size = sizes.shift();
-    	while (size && map[size].length < 2)
-    		size = sizes.shift();
-    	if (!size)
-    		return console.log("all done");
-
-    	nextFile(size, {});
-    }
-
-    function nextFile(size, summap) {
-    	var file = map[size].shift();
-    	if (!file)
-    		return report(size, summap);
-
-    	var sum,
-			    rstream = fs.createReadStream(file),
-		      dstream = digest('md5', 'hex', function(result) {
-		   	  	sum = result;
-		      });
-       
-			rstream
-			  .pipe(dstream)
-				.on('error', function(error) {
-					console.error(error);
-				})
-				.on('data', function (data) { })
-				.on('end', function() {
-			    if (!summap[sum])
-			    	summap[sum] = [];
-			    summap[sum].push(file);
-			    nextFile(size, summap);
-				});
-    }
-
-    function report(size, summap) {
-    	Object.keys(summap).forEach(function(sum) {
-	    	var files = summap[sum];
-	    	if (files.length > 1) {
-	    		console.log('Duplicates found. size:[' + size + '] sum:['+ sum + ']');
-	    		files.forEach(function(file) {
-	    			console.log('  ' + file);
-	    		});
-	    	}
-	    });
-    	nextSize();
-    }
-
-    nextSize();
+})
+.then(map => {
+  Object.keys(map).forEach(sum => {
+    console.log(`Duplicate files found. sum: ${sum}`);
+    map[sum].forEach(file => console.log(`  ${file}`));
   });
-})();
+});
