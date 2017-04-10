@@ -9,7 +9,6 @@
   "dependencies": {
     "bluebird": "^3.5.0",
     "digest-stream": "^0.2.2",
-    "lodash.pick": "^4.4.0",
     "lodash.pickby": "^4.6.0",
     "lodash.reduce": "^4.6.0",
     "walk": "^2.3.4"
