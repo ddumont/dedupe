@@ -32,6 +32,7 @@ exports.getFileSizeMap = function getFiles(root) {
 };
 
 exports.checksum = function checksum(path) {
+  console.log(`hashing: ${path}`);
   return new Promise((resolve, reject) => {
     const rstream = fs.createReadStream(path);
     const dstream = digest('md5', 'hex', result => {
